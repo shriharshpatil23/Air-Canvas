@@ -1,11 +1,17 @@
+from tkinter.font import BOLD
 import cv2
 import mediapipe as mp
 import time
 import numpy as np
 import pyautogui
 import os
+from tkinter import *
 
-from datetime import date
+from PIL import Image,ImageTk
+from tkinter import filedialog
+
+
+from datetime import date, datetime
 
 
 
@@ -79,6 +85,9 @@ class handDetector():
 
         return fingers
 
+
+#------------------------------ DONT touch above C0DE at all --------------------------#
+
 def drawOnCanvas(img,myPoints):
     # for point in myPoints:
     #     # cv2.line(img, (point[1], point[2]), (prpoint[1], prpoint[2]), (255, 0, 255), cv2.FILLED)
@@ -88,17 +97,15 @@ def drawOnCanvas(img,myPoints):
         cv2.line(img, (myPoints[i][1], myPoints[i][2]), (myPoints[i-1][1], myPoints[i-1][2]), (255, 0, 255), 9)
 
 def sceenshotsaving ():
-    today = date.today()
-    print( today)
-    date_time = today.strftime("%m/%d/%Y,%H:%M:%S") + ".PNG"
-    print( date_time)
-
+    
+    time = str(datetime.now().today()).replace(":"," ") + ".jpg"
     image = pyautogui.screenshot()
-    image.save("screenshot.PNG")
+    image.save(time)
 
 
 
 def main():
+
 
     folderPath = "Header" 
 
@@ -110,19 +117,39 @@ def main():
         overlayList.append(image)
     # print(len(overlayList))
     header = overlayList[0]
-    
-    colorpath = "colors"
-    colorlist = os.listdir(colorpath)
+   
+    #colors new thing 
+
+    allimages = []
+    allimagesselect = []
+    boolforall = []
+    colortriplet = []
+    #something new with color images 
+
+    path = "allcolors"
+    colorlist = os.listdir(path)
     print(colorlist)
-    colorimages = []
-    for imPath in colorlist:
-        image = cv2.imread(f'{colorpath}/{imPath}')
-        colorimages.append(image)
-    print(len(colorimages))
-    blueimage = colorimages[0]
-    blueselect = colorimages[1]
-
-
+    for inpath in colorlist :
+        cpath = path + "/" + inpath
+        slist = os.listdir(cpath)
+        # print(slist)
+        folderimages = []
+        for imPath in slist:
+            image = cv2.imread(f'{cpath}/{imPath}')
+            folderimages.append(image)
+        # print(inpath)
+        if inpath == "blue":
+            colortriplet.append((255,0,0))
+        if inpath == "red":
+            colortriplet.append((0,0,255))
+        if inpath == "yellow":
+            colortriplet.append((255,255,0))
+        
+        allimages.append(folderimages[0])
+        allimagesselect.append(folderimages[1])
+        boolforall.append(False)
+        
+        
     frameWidth = 1280
     frameHeight = 720
     cap = cv2.VideoCapture(0)
@@ -135,16 +162,18 @@ def main():
     drawline = False
     imgCanvas = np.zeros((720, 1280, 3), np.uint8)
     i = 0
-    drawColor = (255, 0, 255)
+    drawColor = (255, 0, 0)
     isblue = False 
 
-
-    detector=handDetector(DetectionConfidnc=0.85)
+    detector=handDetector(DetectionConfidnc=0.75)
 
     while True:
         success, img = cap.read()
         img= cv2.flip(img,1)
-        img=detector.findHands(img)
+        if(success):
+            img=detector.findHands(img)
+        else :
+            print("fucked ")
         lmlist= detector.findPosition(img)
         # OLD CODE 
         # if len(lmlist)!=0:
@@ -158,7 +187,6 @@ def main():
             x2, y2 = lmlist[12][1:]
             
             # #TO see if thumb and first finger is touched or not 
-            
             # #for diffrence 
             # xthumb,ythumb = lmlist[4][1:]
             # xdif =xthumb - x1
@@ -178,23 +206,55 @@ def main():
             #     drawline = True
             #     print("made true ")
 
-            #clicked on the blue image 
-            if x1<216 and y1> 233 and y1<233+125:
-                print("clicked on blue")
-                # if isblue :
-                #     print(" making blue false ")
-                #     isblue = False
-                #     drawColor = (255, 0, 255)    
-                # else: 
-                drawColor = (0,0,255)
-                isblue = True
-                print(" making blue true ")
+            # #clicked on the blue image 
+            # if x1<216 and y1> 233 and y1<233+125:
+            #     print("clicked on blue")
+            #     # if isblue :
+            #     #     print(" making blue false ")
+            #     #     isblue = False
+            #     #     drawColor = (255, 0, 255)    
+            #     # else: 
+            #     drawColor = (0,0,255)
+            #     isblue = True
+            #     print(" making blue true ")
+
+            
                 
 
             if xp == 0 and yp == 0:
                 xp = x1
                 yp = y1
            
+
+
+            #put on click listerners on colors 
+            index = 0
+            xs , xe = 1280 - 125 , 1280
+            ys , ye = 0,116            
+            while index < len(allimages):  
+                # if boolforall[index]:
+                #     select = allimages[index]
+                # else :
+                #     select = allimagesselect[index]
+                # img[ys:ye,xs:xe] = select
+                if x1>xs and x1<xe and y1>ys and y1<ye:
+                    drawColor = colortriplet[index]
+                    print(boolforall)
+                    ind = 0
+                    while ind < len(boolforall):
+                        boolforall[index] = False
+                        ind+=1
+                    print("after: ")
+                    print(boolforall)
+                    boolforall[index]= True
+
+                ys += 136
+                ye += 136
+                # print(allimages[index])
+                index+=1
+
+
+
             # # middle finger case 
             # if fingers[1] == False and fingers[2] and fingers[3] == False and fingers[4] == False and drawline :
             #     if xforline == 0 and yforline == 0:
@@ -263,8 +323,6 @@ def main():
         img = cv2.bitwise_and(img,imgInv)
         img = cv2.bitwise_or(img,imgCanvas)
 
-    
-
 
 
         #Write frame rate
@@ -272,16 +330,27 @@ def main():
         fps = 1 / (cTime - pTime)
         pTime = cTime
         cv2.putText(img, "FPS= " + str(int(fps)), (10, 20), cv2.FONT_HERSHEY_PLAIN, 1,(0, 0, 0), 1)
+        index = 0
+        xs , xe = 1280 - 125 , 1280
+        ys , ye = 0,116
+        while index < len(allimages):
+            
+            if boolforall[index]:
+                select = allimages[index]
+            else :
+                select = allimagesselect[index]
+            img[ys:ye,xs:xe] = select
+            ys += 136
+            ye += 136
+            # print(allimages[index])
+            index+=1
 
-        #put header 
-        img[0:233, 0:216] = header
-        #put colors for drawing 
-        if isblue:
-            img[233:233+125,0:125] = blueselect
-        else :
-            img[233:233+125,0:125] = blueimage
+        
+
+
 
         cv2.imshow('image', img)
+
         if cv2.waitKey(1) == 27:
             break
 
@@ -289,6 +358,6 @@ if __name__ == "__main__":
     main()
 
 
-
-##########################################################################################################
+##
+########################################################################################################
 
